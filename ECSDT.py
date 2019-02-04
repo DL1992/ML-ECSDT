@@ -48,11 +48,10 @@ class ECSDT(object):
                 X[:, self.features_drawn[estimator]])
         return X_stacking
 
-    def __init__(self, T, S, Ne, Nf, combiner='Bagging', inducer='MV'):
+    def __init__(self, T, Ne, Nf, combiner='Bagging', inducer='MV'):
         self.inducers = {"Bagging": 0, "Pasting": 1, "RandomForest": 2, "RandomPatches": 3}
         self.combiners = {"MV": 0, "CSWV": 1, "CSS": 2}
         self.num_of_iterations = T
-        self.training_set = S
         self.num_of_samples = Ne
         self.num_of_features = Nf
         self.models = []
@@ -105,7 +104,7 @@ class ECSDT(object):
     def predict(self, X, cost_mat):
         predictions = np.zeros((X.shape[0], self.num_classes))
         # MV
-        if self.combinator == 0:
+        if self.combiner == 0:
             for model, features in zip(self.models, self.features_drawn):
                 model_predictions = model.predict(X[:, features])
                 for i in range(X.shape[0]):
@@ -113,14 +112,14 @@ class ECSDT(object):
             return self.classes_names.take(np.argmax(predictions, axis=1), axis=0)
 
         # CSWV
-        if self.combinator == 1:
+        if self.combiner == 1:
             for model, features, weight in zip(self.models, self.features_drawn, self.alphas):
                 model_predictions = model.predict(X[:, features])
                 for i in range(X.shape[0]):
                     predictions[i, int(model_predictions[i])] += 1 * weight
             return self.classes_names.take(np.argmax(predictions, axis=1), axis=0)
         # CSS
-        if self.combinator == 2:
+        if self.combiner == 2:
             return self.staking_m.predict(self._create_stacking_matrix(X))
 
 

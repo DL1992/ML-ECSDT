@@ -10,8 +10,8 @@ import datetime, time
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-import ECSDTa
-import load_datasets
+import ECSDT
+
 
 
 def eval_models_on_data(data,dataName,models):
@@ -19,13 +19,6 @@ def eval_models_on_data(data,dataName,models):
     X_train, X_test, y_train, y_test, cost_mat_train, cost_mat_test = sets
     # out=[["dataName","modelName","score","learn time"]]
     out=[]
-    d=datetime.datetime.now()
-    RF_learn = RandomForestClassifier(random_state=0).fit(X_train, y_train)
-    d1=datetime.datetime.now()-d
-    time=d1.total_seconds()
-    y_pred_test_rf = RF_learn.predict(X_test)
-    out.append([dataName,"scikit random forest","RF","MV","0", ECSDTa.saving(y_test, y_pred_test_rf, cost_mat_test), time])
-
     for m in models.keys():
         print (dataName,m)
         model=models[m]
@@ -35,7 +28,7 @@ def eval_models_on_data(data,dataName,models):
         time=d1.total_seconds()
         pred=model.predict(X_test,cost_mat_test)
         inducer,combinator,num_estimators=m.split("_")
-        out.append([dataName, m, inducer, combinator, num_estimators, ECSDTa.saving(y_test, pred, cost_mat_test), time])
+        # out.append([dataName, m, inducer, combinator, num_estimators, ECSDTa.saving(y_test, pred, cost_mat_test), time])
     return out
 
 
@@ -47,7 +40,7 @@ def get_models_dict():
         for inducer in inducers:
             for combinator in combinators:
                 name=inducer+"_"+combinator+"_"+str(num_estimators)
-                models[name]=ECSDTa.ECSDT(inducer, combinator, num_estimators, 2000, 7, True)
+                models[name]=ECSDT.ECSDT(num_estimators,2000,7,combinator, inducer)
     return models
 
 out=[["dataName","modelName","inducer","combinator","num_estimators","score","learn time"]]
