@@ -11,7 +11,7 @@ import datetime, time
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-import ECSDT
+import ECSDTa
 import load_datasets
 
 
@@ -19,12 +19,12 @@ def evaluate_ESCDT_RF(data,combinator="RF",inducer="MV",num_estimators=10,sample
     sets = train_test_split(data.data, data.target, data.cost_mat, test_size=0.33, random_state=0)
     X_train, X_test, y_train, y_test, cost_mat_train, cost_mat_test = sets
     y_pred_test_rf = RandomForestClassifier(random_state=0).fit(X_train, y_train).predict(X_test)
-    model=ECSDT.ECSDT(combinator,inducer,num_estimators,samples,max_features,pruned) #(combinator,inducer,num_estimators,samples,max_features,pruned):
+    model=ECSDTa.ECSDT(combinator, inducer, num_estimators, samples, max_features, pruned) #(combinator,inducer,num_estimators,samples,max_features,pruned):
     d=datetime.datetime.now()
     model.fit(X=X_train, y=y_train, cost_mat=cost_mat_train)
     d1=datetime.datetime.now()-d
     pred=model.predict(X_test,cost_mat_test)
-    return ECSDT.saving(y_test, y_pred_test_rf, cost_mat_test), ECSDT.saving(y_test, pred, cost_mat_test),d1.total_seconds()
+    return ECSDTa.saving(y_test, y_pred_test_rf, cost_mat_test), ECSDTa.saving(y_test, pred, cost_mat_test), d1.total_seconds()
 
 
 def eval_models_on_data(data,dataName,models):
@@ -37,7 +37,7 @@ def eval_models_on_data(data,dataName,models):
     d1=datetime.datetime.now()-d
     time=d1.total_seconds()
     y_pred_test_rf = RF_learn.predict(X_test)
-    out.append([dataName,"scikit random forest","RF","MV","0",ECSDT.saving(y_test, y_pred_test_rf, cost_mat_test),time])
+    out.append([dataName,"scikit random forest","RF","MV","0", ECSDTa.saving(y_test, y_pred_test_rf, cost_mat_test), time])
 
     for m in models.keys():
         print (dataName,m)
@@ -48,7 +48,7 @@ def eval_models_on_data(data,dataName,models):
         time=d1.total_seconds()
         pred=model.predict(X_test,cost_mat_test)
         inducer,combinator,num_estimators=m.split("_")
-        out.append([dataName,m,inducer,combinator,num_estimators,ECSDT.saving(y_test, pred, cost_mat_test),time])
+        out.append([dataName, m, inducer, combinator, num_estimators, ECSDTa.saving(y_test, pred, cost_mat_test), time])
     return out
 
 
@@ -62,7 +62,7 @@ def get_models_dict():
         for inducer in inducers:
             for combinator in combinators:
                 name=inducer+"_"+combinator+"_"+str(num_estimators)
-                models[name]=ECSDT.ECSDT(inducer,combinator,num_estimators,2000,7,True)
+                models[name]=ECSDTa.ECSDT(inducer, combinator, num_estimators, 2000, 7, True)
     return models
 
 

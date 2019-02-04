@@ -2,10 +2,11 @@ __author__ = 'amir'
 
 from sklearn.base import BaseEstimator
 import sklearn.ensemble
-import cost_tree
-import costs
-import regression
-from costcla.models import cost_tree
+
+from costcla.metrics import costs as costs
+from costcla.models import cost_tree as cost_tree
+import costcla.models.regression as regression
+
 from sklearn.utils import check_random_state
 from sklearn.utils.random import sample_without_replacement
 import numpy as np
@@ -13,7 +14,6 @@ import numpy as np
 
 inducers={"Bagging":0,"Pasting":1,"RF":2,"RP":3}
 combinators={"MV":0,"CSWV":1,"CSS":2}
-
 
 class ECSDT(object):
     def __init__(self,combinator,inducer,num_estimators,samples,max_features,pruned):
@@ -54,15 +54,15 @@ class ECSDT(object):
             bootstrap=True
             bootstrap_features=False
         #Pasting
-        if self.inducer==0:
+        if self.inducer==1:
             bootstrap=False
             bootstrap_features=False
         #RF
-        if self.inducer==0:
+        if self.inducer==2:
             bootstrap=True
             bootstrap_features=False
         #RP
-        if self.inducer==0:
+        if self.inducer==3:
             bootstrap=True
             bootstrap_features=True
 
