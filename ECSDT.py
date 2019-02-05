@@ -23,7 +23,7 @@ class ECSDT(object):
         return switcher.get(i, (True, False))
 
     def _data_sampling(self, X, y, cost_mat):
-        random = check_random_state(seed=None)
+        random = check_random_state(seed=42)
         n_samples, n_features = X.shape
         if self.bootstrap_features:
             selected_features = random.randint(0, n_features, self.num_of_features)
@@ -90,9 +90,9 @@ class ECSDT(object):
             self.s_oobs.append(s_oob)
             self.alphas.append(costs.savings_score(target_oob,csdt_clf.predict(s_oob),mat_costs_oob))
 
-        temp = np.array(self.alphas)
-        temp = temp/sum(temp)
-        self.alphas = temp.tolist()
+        # temp = np.array(self.alphas)
+        # temp = temp/sum(temp)
+        # self.alphas = temp.tolist()
 
         if self.combiner == 2:
             self.staking_m = regression.CostSensitiveLogisticRegression()
@@ -101,7 +101,7 @@ class ECSDT(object):
         return self
 
     #step2: combine the different base classifiers
-    def predict(self, X, cost_mat):
+    def predict(self, X):
         predictions = np.zeros((X.shape[0], self.num_classes))
         # MV
         if self.combiner == 0:
