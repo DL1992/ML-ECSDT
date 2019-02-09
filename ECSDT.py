@@ -1,5 +1,5 @@
 from costcla.metrics import costs
-from costcla.models import cost_tree
+from costcla.models import cost_tree,bagging
 import costcla.models.regression as regression
 
 from sklearn.utils import check_random_state
@@ -23,7 +23,7 @@ class ECSDT(object):
         return switcher.get(i, (True, False))
 
     def _data_sampling(self, X, y, cost_mat):
-        random = check_random_state(seed=42)
+        random = check_random_state(seed=None)
         n_samples, n_features = X.shape
         if self.bootstrap_features:
             selected_features = random.randint(0, n_features, self.num_of_features)
@@ -42,11 +42,21 @@ class ECSDT(object):
 
     def _create_stacking_matrix(self, X):
         n_samples = X.shape[0]
-        X_stacking = np.zeros((n_samples, len(self.models)))
-        for estimator in range(len(self.models)):
-            X_stacking[:, estimator] = self.models[estimator].predict(
-                X[:, self.features_drawn[estimator]])
+        valid_estimators = np.nonzero(self.alphas)[0]
+        n_valid_estimators = valid_estimators.shape[0]
+        X_stacking = np.zeros((n_samples, n_valid_estimators))
+        for estimator in valid_estimators:
+            X_stacking[:, estimator] = self.models[valid_estimators[estimator]].predict(
+                X[:, self.features_drawn[valid_estimators[estimator]]])
         return X_stacking
+
+        # n_samples = X.shape[0]
+        # valid_estimators = np.nonzero(self.alphas)[0]
+        # X_stacking = np.zeros((n_samples, valid_estimators.shape[0]))
+        # for estimator in range(valid_estimators):
+        #     X_stacking[:, estimator] = self.models[valid_estimators[estimator]].predict(
+        #         X[:, self.features_drawn[valid_estimators[estimator]]])
+        # return X_stacking
 
     def __init__(self, T, Ne, Nf, combiner='Bagging', inducer='MV'):
         self.inducers = {"Bagging": 0, "Pasting": 1, "RandomForest": 2, "RandomPatches": 3}
@@ -88,11 +98,11 @@ class ECSDT(object):
             self.models.append(csdt_clf)
             self.features_drawn.append(features)
             self.s_oobs.append(s_oob)
-            self.alphas.append(costs.savings_score(target_oob,csdt_clf.predict(s_oob),mat_costs_oob))
+            self.alphas.append(max(0.0,costs.savings_score(target_oob,csdt_clf.predict(s_oob),mat_costs_oob)))
 
-        # temp = np.array(self.alphas)
-        # temp = temp/sum(temp)
-        # self.alphas = temp.tolist()
+        temp = np.array(self.alphas)
+        temp = temp/sum(temp)
+        self.alphas = temp.tolist()
 
         if self.combiner == 2:
             self.staking_m = regression.CostSensitiveLogisticRegression()
@@ -110,7 +120,6 @@ class ECSDT(object):
                 for i in range(X.shape[0]):
                     predictions[i, int(model_predictions[i])] += 1
             return self.classes_names.take(np.argmax(predictions, axis=1), axis=0)
-
         # CSWV
         if self.combiner == 1:
             for model, features, weight in zip(self.models, self.features_drawn, self.alphas):
