@@ -11,7 +11,6 @@ import pandas as pd
 import pickle
 import os
 
-
 def eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test, dataset_name,
                where_to_pickle_path, cost_flag=True):
     file_name = '{}_{}.sav'.format(model_name,dataset_name)
@@ -80,28 +79,23 @@ def get_models_dict(Ne, Nf):
     return models
 
 
-# start of running main
 path = "results.csv"
 out = []
 headers = ["DataName", "ModelName", "Inducer", "Combiner", "num_of_iteration", "NE", "NF", "FitTIme", "PredictTIme",
            "SavingScore", "F1Score"]
 
 
-creditscoring1 = load_creditscoring1()
-out = out + eval_models_on_data(creditscoring1, "credit scoring1", get_models_dict(creditscoring1["data"].shape[0], creditscoring1["data"].shape[1]))
+# data = load_creditscoring1()
+# out = out + eval_models_on_data(data, "credit scoring1", get_models_dict(data["data"].shape[0], data["data"].shape[1]))
 
-bankmarketing= load_bankmarketing()
-out = out + eval_models_on_data(bankmarketing, "bankmarketing", get_models_dict(bankmarketing["data"].shape[0], bankmarketing["data"].shape[1]))
+data= load_bankmarketing()
+data1 = data['data']
 
-creditscoring2 = load_creditscoring2()
-out = out + eval_models_on_data(creditscoring2, "credit scoring2", get_models_dict(creditscoring2["data"].shape[0], creditscoring2["data"].shape[1]))
-
-loaded_datasets = data_loader.get_all_datasets()
-for key, value in loaded_datasets.items():
-    out = out + eval_models_on_data(value, key, get_models_dict(value["data"].shape[0], value["data"].shape[1]),True)
-
+# data1 = data_loader.return_model()
+# data = data1['cancer']
+# out = out + eval_models_on_data(data, "cancer", get_models_dict(data["data"].shape[0], data["data"].shape[1]),True)
 
 df = pd.DataFrame(out, columns=headers)
-writer = pd.ExcelWriter('results555.xlsx')
+writer = pd.ExcelWriter('results5.xlsx')
 df.to_excel(writer)
 writer.save()
