@@ -85,8 +85,11 @@ headers = ["DataName", "ModelName", "Inducer", "Combiner", "num_of_iteration", "
            "SavingScore", "F1Score"]
 
 
-data = load_creditscoring1()
-out = out + eval_models_on_data(data, "credit scoring1", get_models_dict(data["data"].shape[0], data["data"].shape[1]))
+# data = load_creditscoring1()
+# out = out + eval_models_on_data(data, "credit scoring1", get_models_dict(data["data"].shape[0], data["data"].shape[1]))
+
+data= load_bankmarketing()
+data1 = data['data']
 
 # data1 = data_loader.return_model()
 # data = data1['cancer']
