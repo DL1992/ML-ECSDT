@@ -12,6 +12,12 @@ def get_all_datasets():
     cancer = pd.read_csv(data_dir + 'cancer/breast_cancer.csv',names=['att'+str(i) for i in range(1,11)])
     cancer.loc[cancer['att10'] == 2] = 0
     cancer.loc[cancer['att10'] == 4] = 1
+    for col in cancer.columns:
+        if cancer[col].dtype == 'object':
+            cancer[col].fillna("Unknown", inplace=True)
+        else:
+            col_mean = cancer[col].mean()
+            cancer[col].fillna(col_mean, inplace=True)
     datasets['cancer'] = create_dataset(cancer.shape[1],cancer)
 
     # 2) data set = bank  https://archive.ics.uci.edu/ml/datasets/Bank+Marketing
@@ -32,6 +38,12 @@ def get_all_datasets():
 
     # 6) data set = default_ccc  https: // archive.ics.uci.edu/ml/datasets/adult
     adult = pd.read_csv(data_dir + 'adult/adult.csv', names=["att" + str(i) for i in range(1, 25)])
+    for col in adult.columns:
+        if adult[col].dtype == 'object':
+            adult[col].fillna("Unknown", inplace=True)
+        else:
+            col_mean = adult[col].mean()
+            adult[col].fillna(col_mean, inplace=True)
     datasets['adult'] = create_dataset(adult.shape[1], adult)
 
     # 7) data set = default_ccc  https://archive.ics.uci.edu/ml/datasets/banknote+authentication
