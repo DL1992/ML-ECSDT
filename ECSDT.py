@@ -50,13 +50,6 @@ class ECSDT(object):
                 X[:, self.features_drawn[valid_estimators[estimator]]])
         return X_stacking
 
-        # n_samples = X.shape[0]
-        # valid_estimators = np.nonzero(self.alphas)[0]
-        # X_stacking = np.zeros((n_samples, valid_estimators.shape[0]))
-        # for estimator in range(valid_estimators):
-        #     X_stacking[:, estimator] = self.models[valid_estimators[estimator]].predict(
-        #         X[:, self.features_drawn[valid_estimators[estimator]]])
-        # return X_stacking
 
     def __init__(self, T, Ne, Nf, combiner='Bagging', inducer='MV'):
         self.inducers = {"Bagging": 0, "Pasting": 1, "RandomForest": 2, "RandomPatches": 3}
@@ -92,7 +85,7 @@ class ECSDT(object):
         #step 1: create the set of base classifires
         for i in range(self.num_of_iterations):
             S, features, target, mat_costs, s_oob, target_oob, mat_costs_oob = self._data_sampling(X, y, cost_mat)
-            csdt_clf = cost_tree.CostSensitiveDecisionTreeClassifier(max_features=self.num_of_features,pruned=True)
+            csdt_clf = cost_tree.CostSensitiveDecisionTreeClassifier(max_depth=4,max_features=self.num_of_features,pruned=True)
             csdt_clf.fit(S, target, mat_costs)
 
             self.models.append(csdt_clf)
@@ -105,7 +98,7 @@ class ECSDT(object):
         self.alphas = temp.tolist()
 
         if self.combiner == 2:
-            self.staking_m = regression.CostSensitiveLogisticRegression()
+            self.staking_m = regression.CostSensitiveLogisticRegression(fit_intercept=False,max_iter=70)
             self.staking_m.fit(self._create_stacking_matrix(X), y, cost_mat)
 
         return self

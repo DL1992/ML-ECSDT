@@ -2,34 +2,38 @@ from costcla.datasets import load_creditscoring1, load_creditscoring2, load_bank
 from costcla.metrics import savings_score
 from costcla.models import cost_tree
 from sklearn.metrics import f1_score
-import datetime
+import time
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 import data_loader
 import ECSDT
 import pandas as pd
-
+import pickle
+import os
 
 def eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test, dataset_name,
-               cost_flag=True):
+               where_to_pickle_path, cost_flag=True):
+    file_name = '{}_{}.sav'.format(model_name,dataset_name)
     print(dataset_name, model_name)
-    start_time = datetime.datetime.now()
+    start_time = time.time()
     if cost_flag:
         model.fit(x_train, y_train, cost_mat_train)
     else:
         model.fit(x_train, y_train)
-    end_time = datetime.datetime.now()
+    pickle.dump(model, open(os.path.join(where_to_pickle_path, file_name), 'wb'))
+    end_time = time.time()
     fit_time = end_time - start_time
-    start_time = datetime.datetime.now()
+    start_time = time.time()
     pred = model.predict(x_test)
-    end_time = datetime.datetime.now()
+    end_time = time.time()
     pred_time = end_time - start_time
     inducer, combiner, num_of_iterations, ne, nf = model_name.split("_")
+    pickle.dump(model,open(file_name,'wb'))
     return [dataset_name, model_name, inducer, combiner, num_of_iterations, ne, nf, fit_time, pred_time,
-            max(0.0, savings_score(y_test, pred, cost_mat_test)), f1_score(y_test, pred)]
+            abs(savings_score(y_test, pred, cost_mat_test)), f1_score(y_test, pred)]
 
 
-def eval_models_on_data(dataset, dataset_name, models, flag=False):
+def eval_models_on_data(dataset, dataset_name, models,where_to_pickle_path, flag=False):
     if flag:
         dataset["data"] = dataset["data"].values
         dataset["target"] = dataset["target"].values
@@ -46,19 +50,19 @@ def eval_models_on_data(dataset, dataset_name, models, flag=False):
     model_name = "{}_{}_{}_{}_{}".format("RF", "MV", "0", x_train.shape[0], x_train.shape[1])
     model = RandomForestClassifier(random_state=42)
     out.append(eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test,
-                          dataset_name, False))
-    ##CSDT baseline
+                          dataset_name,where_to_pickle_path, False))
+    # CSDT baseline
     print(dataset_name, "CSDT")
     model_name = "{}_{}_{}_{}_{}".format("-", "-", "-", x_train.shape[0], x_train.shape[1])
     model = cost_tree.CostSensitiveDecisionTreeClassifier()
     out.append(eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test,
-                          dataset_name))
-    ## models results
+                          dataset_name,where_to_pickle_path))
+    # models results
     for m in models.keys():
         model_name = m
         model = models[model_name]
         out.append(eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test,
-                              dataset_name))
+                              dataset_name,where_to_pickle_path))
     return out
 
 
@@ -78,15 +82,17 @@ def get_models_dict(Ne, Nf):
 path = "results.csv"
 out = []
 headers = ["DataName", "ModelName", "Inducer", "Combiner", "num_of_iteration", "NE", "NF", "FitTIme", "PredictTIme",
-           "SavingScore",
-           "F1Score"]
+           "SavingScore", "F1Score"]
+
+
 data = load_creditscoring1()
 out = out + eval_models_on_data(data, "credit scoring1", get_models_dict(data["data"].shape[0], data["data"].shape[1]))
 
 # data1 = data_loader.return_model()
 # data = data1['cancer']
 # out = out + eval_models_on_data(data, "cancer", get_models_dict(data["data"].shape[0], data["data"].shape[1]),True)
+
 df = pd.DataFrame(out, columns=headers)
-writer = pd.ExcelWriter('results4.xlsx')
+writer = pd.ExcelWriter('results5.xlsx')
 df.to_excel(writer)
 writer.save()

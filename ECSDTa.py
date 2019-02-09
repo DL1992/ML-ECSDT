@@ -80,7 +80,7 @@ class ECSDT(object):
             self.savings.append(self.saving(classifier_predict, target_oob, costs_oob))
 
         if self.combinator == 2:  # in case of stacking combinator, build logistic reggresion model to estimate B
-            self.f_staking = regression.CostSensitiveLogisticRegression()
+            self.f_staking = regression.CostSensitiveLogisticRegression(fit_intercept=False,max_iter=70)
             self.f_staking.fit(self.create_stacking_matrix(X), y, cost_mat)
 
         return self
