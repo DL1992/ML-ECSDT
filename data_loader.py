@@ -1,5 +1,5 @@
-import load_datasets
 from collections import Counter
+import random
 import pandas as pd
 import numpy as np
 
@@ -37,7 +37,7 @@ def get_all_datasets():
     datasets['default_ccc'] = create_dataset(default_ccc.shape[1], default_ccc)
 
     # 6) data set = default_ccc  https: // archive.ics.uci.edu/ml/datasets/adult
-    adult = pd.read_csv(data_dir + 'adult/adult.csv', names=["att" + str(i) for i in range(1, 25)])
+    adult = pd.read_csv(data_dir + 'adult/adult.csv', names=["att" + str(i) for i in range(1, 15)])
     for col in adult.columns:
         if adult[col].dtype == 'object':
             adult[col].fillna("Unknown", inplace=True)
@@ -65,8 +65,9 @@ def create_dataset(att_num,dataset):
     cost_mat = []
     sumy = sum(counts.values())
     for x in test:
-        relation = np.random.randint(90000,100000,1)*(float(counts[x])/sumy)
-        cost_mat.append([relation,relation,0,0])
+        relation_tp = random.randint(10,20000)*(float(counts[x])/sumy)
+        relation_tn = random.randint(10,20000)*(float(counts[x])/sumy)
+        cost_mat.append([relation_tp,relation_tn,0,0])
     cost_mat = np.array(cost_mat)
     return dict([("data",data), ("target",target),("cost_mat",cost_mat)])
 

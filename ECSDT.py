@@ -1,7 +1,6 @@
 from costcla.metrics import costs
 from costcla.models import cost_tree,bagging
 import costcla.models.regression as regression
-
 from sklearn.utils import check_random_state
 from sklearn.utils.random import sample_without_replacement
 import numpy as np
@@ -40,15 +39,30 @@ class ECSDT(object):
         return S, selected_features, y[indexes], cost_mat[indexes, :], (X[oob_indexes])[:, selected_features], y[
             oob_indexes], cost_mat[oob_indexes, :]
 
-    def _create_stacking_matrix(self, X):
+    def _create_predict_matrix(self, X):
         n_samples = X.shape[0]
         valid_estimators = np.nonzero(self.alphas)[0]
         n_valid_estimators = valid_estimators.shape[0]
         X_stacking = np.zeros((n_samples, n_valid_estimators))
-        for estimator in valid_estimators:
+        for estimator in range(n_valid_estimators):
             X_stacking[:, estimator] = self.models[valid_estimators[estimator]].predict(
                 X[:, self.features_drawn[valid_estimators[estimator]]])
         return X_stacking
+
+    def _create_fitting_matrix(self, X,y,cost_mat):
+        random = check_random_state(seed=None)
+        indexes = sample_without_replacement(X.shape[0], self.num_of_samples, random_state=random)
+        dummy_x = X[indexes, :]
+        dummy_y = y[indexes]
+        dummy_cost_mat = cost_mat[indexes, :]
+        n_samples = dummy_x.shape[0]
+        valid_estimators = np.nonzero(self.alphas)[0]
+        n_valid_estimators = valid_estimators.shape[0]
+        X_stacking = np.zeros((n_samples, n_valid_estimators))
+        for estimator in range(n_valid_estimators):
+            X_stacking[:, estimator] = self.models[valid_estimators[estimator]].predict(
+                dummy_x[:, self.features_drawn[valid_estimators[estimator]]])
+        return X_stacking,dummy_y,dummy_cost_mat
 
 
     def __init__(self, T, Ne, Nf, combiner='Bagging', inducer='MV'):
@@ -66,7 +80,7 @@ class ECSDT(object):
 
         if inducer in self.inducers.keys():
             self.inducer = self.inducers[inducer]
-            # The default combinator is majority voting
+            # The default inducer is Bagging
         else:
             self.inducer = self.inducers["Bagging"]
 
@@ -85,22 +99,37 @@ class ECSDT(object):
         #step 1: create the set of base classifires
         for i in range(self.num_of_iterations):
             S, features, target, mat_costs, s_oob, target_oob, mat_costs_oob = self._data_sampling(X, y, cost_mat)
-            csdt_clf = cost_tree.CostSensitiveDecisionTreeClassifier(max_depth=4,max_features=self.num_of_features,pruned=True)
+            csdt_clf = cost_tree.CostSensitiveDecisionTreeClassifier(max_depth=6,max_features=self.num_of_features,pruned=True)
             csdt_clf.fit(S, target, mat_costs)
 
             self.models.append(csdt_clf)
             self.features_drawn.append(features)
             self.s_oobs.append(s_oob)
-            self.alphas.append(max(0.0,costs.savings_score(target_oob,csdt_clf.predict(s_oob),mat_costs_oob)))
+            self.alphas.append(costs.savings_score(target_oob,csdt_clf.predict(s_oob),mat_costs_oob))
 
+        #lies for alphas!
+        pos = any(n > 0 for n in self.alphas)
+        if pos:
+            self.alphas = [0.0 if n < 0 else n for n in self.alphas]
+        else:
+            real_max_alpha = max(self.alphas)
+            max_alpha = real_max_alpha
+            if real_max_alpha==0:
+                max_alpha=0.001
+            self.alphas = [0.0 if n != real_max_alpha else abs(max_alpha) for n in self.alphas]
         temp = np.array(self.alphas)
-        temp = temp/sum(temp)
+        alpha_sum = sum(temp)
+        if alpha_sum>0:
+            temp = temp/sum(temp)
         self.alphas = temp.tolist()
 
         if self.combiner == 2:
-            self.staking_m = regression.CostSensitiveLogisticRegression(fit_intercept=False,max_iter=70)
-            self.staking_m.fit(self._create_stacking_matrix(X), y, cost_mat)
-
+            self.staking_m = regression.CostSensitiveLogisticRegression()
+            x_stacking, y_stacking, cost_mat_stacking = self._create_fitting_matrix(X,y,cost_mat)
+            if x_stacking.shape[1] > 1:
+                self.staking_m.fit(x_stacking, y_stacking, cost_mat_stacking)
+            else:
+                self.combiner=0
         return self
 
     #step2: combine the different base classifiers
@@ -122,8 +151,7 @@ class ECSDT(object):
             return self.classes_names.take(np.argmax(predictions, axis=1), axis=0)
         # CSS
         if self.combiner == 2:
-            return self.staking_m.predict(self._create_stacking_matrix(X))
-
+            return self.staking_m.predict(self._create_predict_matrix(X))
 
 
 
