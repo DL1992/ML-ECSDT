@@ -5,6 +5,11 @@ import numpy as np
 
 
 def get_all_datasets():
+    """
+    main function for loading all the dataset used in the experiment.
+    each data set is pre-processed and add to a dic object with the key being the data set name.
+    :return: dic object of process data sets.
+    """
     datasets={}
     data_dir = "DataSets/"
 
@@ -54,6 +59,17 @@ def get_all_datasets():
 
 
 def create_dataset(att_num,dataset):
+    """
+    This function is used to pre-process a dataset to be used later in the expremint.
+    this consist of creating the rnadom cost matrix for the records and divide the data set into 3 parts: data,target
+    and cost matrix.
+    the lase column of the dataset must be the class to predict.
+
+    :param att_num: number of attributes in the dataet.
+    :param dataset: the data set to pre-process.
+    :return: a dic object with 3 keys: data,target and cost matrix.
+    """
+    #converting categorical features.
     for col in dataset.columns:
         if dataset[col].dtype == object:
             dataset[col] = dataset[col].astype('category')

@@ -15,6 +15,21 @@ import os
 
 def eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test, dataset_name,
                where_to_pickle_path, cost_flag=True):
+    """
+    the main function ot run a model on the data set.
+    :param model: the model to be used.
+    :param model_name: the model name to use for records and logging.
+    :param x_train: the training set.
+    :param y_train: the training set labels.
+    :param x_test:  the test set.
+    :param y_test: the test set labels.
+    :param cost_mat_train: the cost matrix for the training set.
+    :param cost_mat_test: the cost matrix for the test set.
+    :param dataset_name:  the name of the data set to use for logging.
+    :param where_to_pickle_path: a path to dump the trained models for later use.
+    :param cost_flag: a boolean to decide if we need to use the cost matrix or not(random forest doesnt need it)
+    :return: a list describing the results of the run. thi will be a single record in the final result file.
+    """
     file_name = '{}_{}.sav'.format(model_name, dataset_name)
     print(dataset_name, model_name)
     start_time = time.time()
@@ -37,9 +52,19 @@ def eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_tra
 
 
 def eval_models_on_data(dataset, dataset_name, models, where_to_pickle_path, flag=False):
+    """
+    the main function conducting the experiment.
+    :param dataset: the data set used
+    :param dataset_name: the name of the data set
+    :param models: the dictionary of ensemble objects to test on the dataset.
+    :param where_to_pickle_path: a path to dump the models.
+    :param flag: a flag used to differentiate between our data sets and costcla data sets.
+    :return: a list of lists decribing the results of each run for each model on each data set.
+    """
     if flag:
         dataset["data"] = dataset["data"].values
         dataset["target"] = dataset["target"].values
+
     x_train, x_test, y_train, y_test, cost_mat_train, cost_mat_test = train_test_split(dataset["data"],
                                                                                        dataset["target"],
                                                                                        dataset["cost_mat"],
@@ -49,13 +74,13 @@ def eval_models_on_data(dataset, dataset_name, models, where_to_pickle_path, fla
         y_test = y_test.T[0]
     # RF baseline
     print(dataset_name, "Random Forest")
-    model_name = "{}_{}_{}_{}_{}".format("RF", "MV", "0", x_train.shape[0], x_train.shape[1])
+    model_name = "{}_{}_{}_{}_{}".format("RandomForest", "RandomForest", "0", x_train.shape[0], x_train.shape[1])
     model = RandomForestClassifier()
     out.append(eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test,
                           dataset_name, where_to_pickle_path, False))
     # CSDT baseline
     print(dataset_name, "CSDT")
-    model_name = "{}_{}_{}_{}_{}".format("CSDT", "-", "-", x_train.shape[0], x_train.shape[1])
+    model_name = "{}_{}_{}_{}_{}".format("CSDT", "CSDT", "0", x_train.shape[0], x_train.shape[1])
     model = cost_tree.CostSensitiveDecisionTreeClassifier()
     out.append(eval_model(model, model_name, x_train, y_train, x_test, y_test, cost_mat_train, cost_mat_test,
                           dataset_name, where_to_pickle_path))
@@ -69,6 +94,12 @@ def eval_models_on_data(dataset, dataset_name, models, where_to_pickle_path, fla
 
 
 def get_models_dict(Ne, Nf):
+    """
+    creating all the ensembles objects to used on each data set in the experimentt.
+    :param Ne: number of subsamples to use.
+    :param Nf: number of features to use.
+    :return: a dic object with all the ensemble objects.
+    """
     inducers = {"Bagging": 0, "Pasting": 1, "RF": 2, "RP": 3}
     combiners = {"MV": 0, "CSWV": 1, "CSS": 2}
     models = {}
